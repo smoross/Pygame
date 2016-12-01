@@ -1,28 +1,31 @@
 print ('This is a game by Samantha Moross')
 
-import pygame, sys, random, time
+import pygame, sys, random, os
 from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
     K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
 
-#Defines colors
-black = (0, 0, 0)
-white = (255, 255, 255)
-green = (0, 255, 0)
-red = (255, 0, 0)
-
+pygame.init()
+screensize = (640, 480)
+screen = pygame.display.set_mode(screensize)
 FPS = 200
 
-class Pong(object): #CHANGE TO SPRITE
+#Define colors
+black = (0, 0, 0)
+white = (255, 255, 255)
+green = (0, 100, 00)
+red = (255, 0, 0)
+
+class Pong(object): #CHANGE TO SPRITE?
 	def __init__(self, screensize):
-		#showTextScreen('Pong')
 		self.screensize = screensize
 
-		self.centerx = int(screensize[0]*0.5) #places object in the center
+		#place ball in the center
+		self.centerx = int(screensize[0]*0.5) 
 		self.centery = int(screensize[1]*0.5)
 
 		self.radius = 8
 
-		#create rectangle and sizes it
+		#create shape and sizes it
 		self.rect = pygame.Rect(self.centerx-self.radius, 
 			self.centery-self.radius, 
 			self.radius*2, self.radius*2) 
@@ -35,8 +38,8 @@ class Pong(object): #CHANGE TO SPRITE
 		self.speedy = 5
 		#ADJUST RATIO OF X & Y SPEEDS TO MAKE IT HARDER AS GAME PROGRESSES
 
-		self.hit_left = False
-		self.hit_right = False
+		self.hit_left_edge = False
+		self.hit_right_edge = False
 
 	def update(self, player_paddle, ai_paddle):
 		self.centerx += self.direction[0]*self.speedx
@@ -44,27 +47,43 @@ class Pong(object): #CHANGE TO SPRITE
 
 		self.rect.center = (self.centerx, self.centery)
 
-		if self.rect.top <= 0: #makes sure if ball hits top it comes back down
+		sound = pygame.mixer.Sound(os.path.join('ping.wav'))
+		player_score = 0
+		ai_score = 0
+
+		#makes sure if ball hits top it comes back down
+		if self.rect.top <= 0: 
 			self.direction[1] = 1
 		elif self.rect.bottom >= self.screensize[1]-1:
 			self.direction[1] = -1 #bounce up and down
+		elif self.rect.right >= self.screensize[0]-1:
+			self.direction[0] = -1
+		elif self.rect.left <= 0:
+			self.direction[0] = 1
 
 		#checks if the code above is true
-		if self.rect.right >=self.screensize[1]-1: #if it's greater than width -1
-			self.hit_right = True
+		if self.rect.right >=self.screensize[0]-1: #if it's greater than width -1
+			self.hit_right_edge = True
 		elif self.rect.left <= 0:
-			self.hit_left = True
+			self.hit_left_edge = True
+		if self.rect.top <= 0: 
+			self.hit_right_edge = True
+		elif self.rect.bottom >= self.screensize[1]-1:
+			self.hit_left_edge = True
 
-		#CHANGE DIRECTION OF PONG BASED ON WHERE IT HITS PADDLES
-		#CHECK CENTER POINTS OF EACH
 
 		#check for a collision between the rectangles
 		if self.rect.colliderect(player_paddle.rect):
-			pygame.mixer.music.Sound('ping.WAV').play()
 			self.direction[0] = -1
+			player_score += 1
+			sound.play()
+			
 		if self.rect.colliderect(ai_paddle.rect):
-			pygame.mixer.music.Sound('ping.WAV').play()
 			self.direction[0] = 1
+			ai_score += 1
+			sound.play()
+
+		#CHECK CENTER POINTS OF EACH
 
 	def render(self, screen):
 		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
@@ -80,7 +99,6 @@ class AIPaddle(object):
 
 		self.height = 100
 		self.width = 10
-		#ADJUST SIZE OF PADDLE AS MATCH PROGRESSES TO MAKE IT HARDER
 
 		self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
@@ -108,23 +126,24 @@ class PlayerPaddle(object):
 
 		self.height = 100
 		self.width = 10
-		#ADJUST SIZE OF PADDLE AS MATCH PROGRESSES TO MAKE IT HARDER
 
 		self.rect = pygame.Rect(0, self.centery-int(self.height*0.5), self.width, self.height)
 
 		self.color = white
 
 		self.speed = 3
-		self.direction = 0 #dont want it to move on its own
+		self.direction = 0 #don't want it to move on its own
+		
 
 	def update(self):
 		self.centery += self.direction*self.speed
 		self.rect.center = (self.centerx, self.centery)
 
+		#make sure paddle does not go off screen
 		if self.rect.top < 0:
 			self.rect.top = 0
 		if self.rect.bottom > self.screensize[1]-1:
-			self.rect.bottom = self.screensize[1]-1 #makes sure paddle does not go off screen
+			self.rect.bottom = self.screensize[1]-1 
 
 	def render(self,screen):
 		pygame.draw.rect(screen, self.color, self.rect, 0)
@@ -132,11 +151,6 @@ class PlayerPaddle(object):
 
 def main():
 	running = True
-	pygame.init()
-
-	screensize = (640, 480)
-
-	screen = pygame.display.set_mode(screensize)
 
 	clock = pygame.time.Clock()
 
@@ -145,13 +159,14 @@ def main():
 	player_paddle = PlayerPaddle(screensize)
 
 	pygame.display.set_caption('Pong')
-	font = pygame.font.Font('freesansbold.ttf', 24)
 
-	while running: #Main game loop
-			
+	pygame.mixer.music.load(os.path.join('ping.wav'))
+
+	while running: #Main game loop	
 		for event in pygame.event.get(): #handles events
 			if event.type == pygame.QUIT: #Makes sure we can quit the game
-				running = False
+				pygame.quit()
+				exit()
 
 			if event.type == KEYDOWN:
 				if event.key == K_UP:
@@ -166,26 +181,20 @@ def main():
 				elif event.key == K_DOWN and player_paddle.direction == 1:
 					player_paddle.direction = 0 
 		
-		ai_paddle.update(pong) #update paddle before pong 
+		ai_paddle.update(pong)
 		player_paddle.update()
 		pong.update(player_paddle, ai_paddle)
 
-		if pong.hit_left: #MAKE TXT ON SCREEN OVER EVERYTHING ELSE SYAING YOU LOST/WON AND EXIT ON KEYPRESS
-			print ('You Won') #ALLOW RESTARTING OF THE GAME. by recreating pongs/paddles
-			running = False
-		elif pong.hit_right:
-			print ('You Lose')
-			running = False
-
-		screen.fill(black)
+		screen.fill(green)
 
 		ai_paddle.render(screen)
 		player_paddle.render(screen)
 		pong.render(screen) #calls render function to the screen
 
 		pygame.display.flip() #renders everything based on the update
-		FPS = clock.tick(FPS) 
+		clock.tick(FPS) 
 
+	pygame.quit()
 
 if __name__=='__main__':
         main()
