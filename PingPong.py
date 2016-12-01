@@ -8,14 +8,15 @@ pygame.init()
 screensize = (640, 480)
 screen = pygame.display.set_mode(screensize)
 FPS = 200
-
+player_paddle_win = False
+ai_paddle_win = False
 #Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 100, 00)
 red = (255, 0, 0)
 
-class Pong(object): #CHANGE TO SPRITE?
+class Pong(object):
 	def __init__(self, screensize):
 		self.screensize = screensize
 
@@ -36,10 +37,12 @@ class Pong(object): #CHANGE TO SPRITE?
 
 		self.speedx = 2
 		self.speedy = 5
-		#ADJUST RATIO OF X & Y SPEEDS TO MAKE IT HARDER AS GAME PROGRESSES
 
 		self.hit_left_edge = False
 		self.hit_right_edge = False
+
+		self.ai_score = 0
+		self.player_score = 0
 
 	def update(self, player_paddle, ai_paddle):
 		self.centerx += self.direction[0]*self.speedx
@@ -48,8 +51,8 @@ class Pong(object): #CHANGE TO SPRITE?
 		self.rect.center = (self.centerx, self.centery)
 
 		sound = pygame.mixer.Sound(os.path.join('ping.wav'))
-		player_score = 0
-		ai_score = 0
+
+		
 
 		#makes sure if ball hits top it comes back down
 		if self.rect.top <= 0: 
@@ -71,19 +74,22 @@ class Pong(object): #CHANGE TO SPRITE?
 		elif self.rect.bottom >= self.screensize[1]-1:
 			self.hit_left_edge = True
 
-
 		#check for a collision between the rectangles
 		if self.rect.colliderect(player_paddle.rect):
 			self.direction[0] = -1
-			player_score += 1
+			self.player_score += 1
 			sound.play()
-			
+			self.speedx += 0.5 #speed increases when pong ball collides
+			if self.player_score == 10: #win if you score 15 points
+				player_paddle_win = True	
+
 		if self.rect.colliderect(ai_paddle.rect):
 			self.direction[0] = 1
-			ai_score += 1
+			self.ai_score += 1
 			sound.play()
-
-		#CHECK CENTER POINTS OF EACH
+			self.speedy += 0.5 #speed increases when pong ball collides
+			if self.ai_score == 10: #lose if the computer scores 15 points
+				ai_paddle_win = True
 
 	def render(self, screen):
 		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
@@ -115,7 +121,7 @@ class AIPaddle(object):
 
 	def render(self,screen):
 		pygame.draw.rect(screen, self.color, self.rect, 0)
-		pygame.draw.rect(screen, (0,0,0), self.rect, 1)
+		pygame.draw.rect(screen, white, self.rect, 1)
 
 class PlayerPaddle(object):
 	def __init__(self, screensize):
@@ -134,7 +140,6 @@ class PlayerPaddle(object):
 		self.speed = 3
 		self.direction = 0 #don't want it to move on its own
 		
-
 	def update(self):
 		self.centery += self.direction*self.speed
 		self.rect.center = (self.centerx, self.centery)
@@ -179,17 +184,34 @@ def main():
 					player_paddle.direction = 0 
 
 				elif event.key == K_DOWN and player_paddle.direction == 1:
-					player_paddle.direction = 0 
-		
+					player_paddle.direction = 0	
+
+			
 		ai_paddle.update(pong)
 		player_paddle.update()
 		pong.update(player_paddle, ai_paddle)
 
+		# if player_paddle_win == True:
+		# 	txt = font.render("Congratulations you win!!!!!", True, white)
+		# 	screen.blit(txt, (320, 0))
+		# elif ai_paddle_win == True:
+		# 	txt2 = font.render("Sorry, try again.", True, white)
+		# 	screen.blit(txt2, (320, 0))
+		# else:
+		# 	continue		
+
 		screen.fill(green)
+		#draw vertical line for ping pong design
+		pygame.draw.line(screen, white, (320, 0), (320, 480), 5) 
 
 		ai_paddle.render(screen)
 		player_paddle.render(screen)
 		pong.render(screen) #calls render function to the screen
+
+		default_font = pygame.font.get_default_font()
+		font = pygame.font.Font(default_font, 50)
+		msg = font.render("   "+str(pong.ai_score)+"  Score  "+str(pong.player_score), True, white)
+		screen.blit(msg, (320, 0)) #adds score to the screen
 
 		pygame.display.flip() #renders everything based on the update
 		clock.tick(FPS) 
