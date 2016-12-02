@@ -1,6 +1,6 @@
 print ('This is a game by Samantha Moross')
 
-import pygame, sys, random, os
+import pygame, sys, random, os, time
 from pygame.locals import Rect, DOUBLEBUF, QUIT, K_ESCAPE, KEYDOWN, K_DOWN, \
     K_LEFT, K_UP, K_RIGHT, KEYUP, K_LCTRL, K_RETURN, FULLSCREEN
 
@@ -8,8 +8,7 @@ pygame.init()
 screensize = (640, 480)
 screen = pygame.display.set_mode(screensize)
 FPS = 200
-player_paddle_win = False
-ai_paddle_win = False
+
 #Define colors
 black = (0, 0, 0)
 white = (255, 255, 255)
@@ -44,6 +43,9 @@ class Pong(object):
 		self.ai_score = 0
 		self.player_score = 0
 
+		self.player_paddle_win = False
+		self.ai_paddle_win = False		
+
 	def update(self, player_paddle, ai_paddle):
 		self.centerx += self.direction[0]*self.speedx
 		self.centery += self.direction[1]*self.speedy
@@ -52,14 +54,12 @@ class Pong(object):
 
 		sound = pygame.mixer.Sound(os.path.join('ping.wav'))
 
-		
-
 		#makes sure if ball hits top it comes back down
 		if self.rect.top <= 0: 
 			self.direction[1] = 1
 		elif self.rect.bottom >= self.screensize[1]-1:
 			self.direction[1] = -1 #bounce up and down
-		elif self.rect.right >= self.screensize[0]-1:
+		elif self.rect.right >= self.screensize[0]-1: 
 			self.direction[0] = -1
 		elif self.rect.left <= 0:
 			self.direction[0] = 1
@@ -80,16 +80,16 @@ class Pong(object):
 			self.player_score += 1
 			sound.play()
 			self.speedx += 0.5 #speed increases when pong ball collides
-			if self.player_score == 10: #win if you score 15 points
-				player_paddle_win = True	
+			if self.player_score == 1: #win if you score 15 points
+				self.player_paddle_win = True	
 
 		if self.rect.colliderect(ai_paddle.rect):
 			self.direction[0] = 1
 			self.ai_score += 1
 			sound.play()
 			self.speedy += 0.5 #speed increases when pong ball collides
-			if self.ai_score == 10: #lose if the computer scores 15 points
-				ai_paddle_win = True
+			if self.ai_score == 1: #lose if the computer scores 15 points
+				self.ai_paddle_win = True
 
 	def render(self, screen):
 		pygame.draw.circle(screen, self.color, self.rect.center, self.radius, 0)
@@ -121,7 +121,7 @@ class AIPaddle(object):
 
 	def render(self,screen):
 		pygame.draw.rect(screen, self.color, self.rect, 0)
-		pygame.draw.rect(screen, white, self.rect, 1)
+		pygame.draw.rect(screen, black, self.rect, 1)
 
 class PlayerPaddle(object):
 	def __init__(self, screensize):
@@ -166,6 +166,11 @@ def main():
 	pygame.display.set_caption('Pong')
 
 	pygame.mixer.music.load(os.path.join('ping.wav'))
+	pygame.mixer.music.load(os.path.join('win.wav'))
+	pygame.mixer.music.load(os.path.join('lose.wav'))
+
+	win = pygame.mixer.Sound(os.path.join('win.wav'))
+	lose = pygame.mixer.Sound(os.path.join('lose.wav'))
 
 	while running: #Main game loop	
 		for event in pygame.event.get(): #handles events
@@ -184,25 +189,21 @@ def main():
 					player_paddle.direction = 0 
 
 				elif event.key == K_DOWN and player_paddle.direction == 1:
-					player_paddle.direction = 0	
+					player_paddle.direction = 0
 
-			
+
+		if pong.player_paddle_win == True:
+			running = False
+		elif pong.ai_paddle_win == True:
+			running = False
+
 		ai_paddle.update(pong)
 		player_paddle.update()
-		pong.update(player_paddle, ai_paddle)
-
-		# if player_paddle_win == True:
-		# 	txt = font.render("Congratulations you win!!!!!", True, white)
-		# 	screen.blit(txt, (320, 0))
-		# elif ai_paddle_win == True:
-		# 	txt2 = font.render("Sorry, try again.", True, white)
-		# 	screen.blit(txt2, (320, 0))
-		# else:
-		# 	continue		
+		pong.update(player_paddle, ai_paddle)				
 
 		screen.fill(green)
 		#draw vertical line for ping pong design
-		pygame.draw.line(screen, white, (320, 0), (320, 480), 5) 
+		pygame.draw.line(screen, white, (320, 0), (320, 480), 5)	 
 
 		ai_paddle.render(screen)
 		player_paddle.render(screen)
@@ -213,9 +214,20 @@ def main():
 		msg = font.render("   "+str(pong.ai_score)+"  Score  "+str(pong.player_score), True, white)
 		screen.blit(msg, (320, 0)) #adds score to the screen
 
+		clock.tick(FPS)
 		pygame.display.flip() #renders everything based on the update
-		clock.tick(FPS) 
 
+	if pong.player_paddle_win == True:
+		txt = font.render("You Won!!!!!", True, white)
+		screen.blit(txt, (100, 200))
+		win.play()
+	elif pong.ai_paddle_win == True:
+		txt2 = font.render("Sorry, try again.", True, white)
+		screen.blit(txt2, (100, 200))
+		lose.play()
+
+	pygame.display.flip() 
+	pygame.time.delay(5000)
 	pygame.quit()
 
 if __name__=='__main__':
