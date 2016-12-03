@@ -79,16 +79,16 @@ class Pong(object):
 			self.direction[0] = -1
 			self.player_score += 1
 			sound.play()
-			self.speedx += 0.5 #speed increases when pong ball collides
-			if self.player_score == 1: #win if you score 15 points
+			self.speedx += 1 #speed increases when pong ball collides
+			if self.player_score == 10: #win if you score 15 points
 				self.player_paddle_win = True	
 
 		if self.rect.colliderect(ai_paddle.rect):
 			self.direction[0] = 1
 			self.ai_score += 1
 			sound.play()
-			self.speedy += 0.5 #speed increases when pong ball collides
-			if self.ai_score == 1: #lose if the computer scores 15 points
+			self.speedy += 1 #speed increases when pong ball collides
+			if self.ai_score == 10: #lose if the computer scores 15 points
 				self.ai_paddle_win = True
 
 	def render(self, screen):
@@ -170,7 +170,7 @@ def main():
 	pygame.mixer.music.load(os.path.join('lose.wav'))
 
 	win = pygame.mixer.Sound(os.path.join('win.wav'))
-	lose = pygame.mixer.Sound(os.path.join('lose.wav'))
+	lose = pygame.mixer.Sound(os.path.join('lose.wav'))	
 
 	while running: #Main game loop	
 		for event in pygame.event.get(): #handles events
@@ -190,7 +190,6 @@ def main():
 
 				elif event.key == K_DOWN and player_paddle.direction == 1:
 					player_paddle.direction = 0
-
 
 		if pong.player_paddle_win == True:
 			running = False
@@ -218,11 +217,11 @@ def main():
 		pygame.display.flip() #renders everything based on the update
 
 	if pong.player_paddle_win == True:
-		txt = font.render("You Won!!!!!", True, white)
+		txt = font.render(" You Won!!!!", True, white)
 		screen.blit(txt, (100, 200))
 		win.play()
 	elif pong.ai_paddle_win == True:
-		txt2 = font.render("Sorry, try again.", True, white)
+		txt2 = font.render("Sorry, try again!", True, white)
 		screen.blit(txt2, (100, 200))
 		lose.play()
 
